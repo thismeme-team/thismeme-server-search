@@ -1,0 +1,31 @@
+version: '3'
+services:
+  fastapi:
+      container_name: fastapi
+      restart: always
+      build:
+        context: fastapi_project/
+        dockerfile: Dockerfile
+      # command: gunicorn -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000 --workers 2 --reload
+      command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      ports:
+       - "8000:8000"
+      networks:
+      - backend
+      volumes:
+      - ./fastapi_project:/app
+      - ./fastapi_project/secrets/.env:/app/secrets/.env
+  nginx:
+      container_name: nginx
+      restart: always
+      build:
+        context: nginx/
+        dockerfile: Dockerfile
+      ports:
+       - "80:80"
+      networks:
+       - backend
+ 
+networks:
+  backend:
+    driver: bridge

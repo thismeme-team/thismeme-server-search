@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>태그 관리 페이지</title>
+    <style>
+        body, html{
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: antiquewhite;
+        }
+        input, select, button{
+            font-size: 1.5rem;
+        }
+
+        .tag-list{
+            width: 100%;
+            height: 100%;
+        }
+        .category-tag-wrapper{
+            width: 100%;
+            margin-bottom: 60px;
+        }
+        .tag-domain-wrapper{
+            width: 100%;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+        .main-category-wrapper{
+            width: 100%;
+            height: 50px;
+            font-size: 3rem;
+        }
+        .category-wrapper{
+            width: 100%;
+            height: 50px;
+            font-size: 2rem;
+        }
+        .tag-item{
+            width: 100%;
+            height: 30px;
+            margin-bottom: 10px;
+        }
+        .tag-field{
+            float: left;
+            margin-right: 10px;
+            font-size: 1.5rem;
+        }
+        .tag-id-wrapper{
+            width: 50px;
+        }
+        .tag-name-wrapper{
+            width: 300px;
+        }
+        .tag-category-wrapper{
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="tag-list">
+        {% for main_category, sub_categories in data.category_datas.items() %}
+            <div class="category-tag-wrapper">
+                <div class="main-category-wrapper">
+                    {{main_category.name}}
+                </div>
+                {% for sub_category in sub_categories %}
+                <div class="category-wrapper">
+                    {{sub_category.name}}
+                </div>
+                <div class="tag-domain-wrapper">
+                    <div class="tag-field tag-id-wrapper">ID</div>
+                    <div class="tag-field tag-name-wrapper">
+                        태그명
+                    </div>
+                    <div class="tag-field tag-category-wrapper">
+                        1차 카테고리
+                    </div>
+                    <div class="tag-field tag-category-wrapper">
+                        2차 카테고리
+                    </div>
+                </div>
+                    {% for tag in data.category_datas[main_category][sub_category] %}
+                        <div class="tag-item" id="tag-{{tag.tag_id}}">
+                            <div class="tag-field tag-id-wrapper">{{tag.tag_id}}</div>
+                            <div class="tag-field tag-name-wrapper">
+                                <input type="text" id="tag-name-{{tag.tag_id}}" value="{{tag.name}}"/>
+                            </div>
+                            <div class="tag-field tag-category-wrapper">
+                                <select id="tag-category-{{tag.tag_id}}">
+                                    {% for main_category in data.main_categories %}
+                                        {% if tag.category.main_category.main_category_id == main_category.main_category_id %}
+                                            <option selected value="{{main_category.main_category_id}}">{{main_category.name}}</option>
+                                        {% else %}
+                                            <option>{{main_category.name}}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="tag-field tag-category-wrapper">
+                                <select id="tag-category-{{tag.tag_id}}">
+                                    {% for category in data.categories %}
+                                        {% if tag.category_id == category.category_id %}
+                                            <option selected value="{{category.category_id}}">{{category.name}}</option>
+                                        {% else %}
+                                            <option>{{category.name}}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button onclick="change_category({{tag.tag_id}})">저장</button>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        const change_category = (tag_id) => {
+            const tag_name = document.getElementById(`tag-name-${tag_id}`).value;
+            const category_id = document.getElementById(`tag-category-${tag_id}`).value;
+            const data = {
+                "tag_name": tag_name,
+                "category_id": parseInt(category_id)
+            };
+
+            console.log(data);
+
+            fetch(`http://localhost/manage/tag/${tag_id}`, {
+                method: "PUT",
+                mode: "same-origin",
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const result = data.result;
+                    if(result === "duplicate"){
+                        alert("중복");
+                    } else if(result === "ok"){
+                        alert("수정되었습니다");
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

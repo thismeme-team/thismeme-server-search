@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>업로드</title>
+
+    <style>
+        html, body{
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .main-category-wrapper{
+            display: none;
+        }
+        .example-selected-tag-item{
+            display: none;
+        }
+        .selected-tag-item{
+            float: left;
+            margin-right: 5px;
+            background-color: brown;
+            border-radius: 5px;
+            font-size: 20px;
+            color: white;
+            padding: 3px;
+        }
+
+        #mask{
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: translate(0, 0);
+            width: 100%;
+            height: 100%;
+            background-color: black;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #mask-image{
+            animation: animName 2s linear infinite;
+            position: absolute;
+            top: 35%;
+            left: 35%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes animName {
+            0%{
+                transform: rotate(0deg);
+            }
+            100%{
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <form id="upload-form" method="POST" action="meme/upload" enctype="multipart/form-data">
+        <div class="image-wrapper">
+            <input id="image" name="image" type="file" required/>
+            <br/>
+            <img id="image-section" src="#" alt="" width="300"/> 
+        </div>
+        <div class="name-wrapper">
+            <input id="name" name="name" type="text" placeholder="제목" required/>
+        </div>
+        <div class="description-wrapper">
+            <input id="description" name="description" type="text" placeholder="설명"/>
+        </div>
+        <div class="main-category-wrapper">
+            메인 카테고리
+            <select name="main-category" id="main-category">
+                {% for main_category in data.main_categories %}
+                    <option value="{{main_category.main_category_id}}">{{main_category.main_category_id}} {{main_category.name}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="sub-category-wrapper">
+            2차 카테고리
+            <select name="sub-category" id="sub-category">
+                {% for category in data.categories %}
+                    <option value="{{category.category_id}}" data-main-category-id="{{category.main_category_id}}">
+                        {{category.category_id}} {{category.name}}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="tags-wrapper">
+            <div id="selected-tag-wrapper">
+                <div>선택한 태그 목록</div>
+                <div id="selected-tag-list">
+                    <div id="selected-tag-0" class="selected-tag-item example-selected-tag-item" data-tag-id="0">
+                        <span class="tag-name">박명수</span>
+                        <button class="delete-button" onclick="deleteSelectedTag(this);" data-tag-id="0">X</button>
+                    </div>
+                </div>
+            </div>
+            <br/><br/>
+            <select id="tag-list" disabled>
+                {% for tag in data.tags %}
+                    <option class="tag-option" 
+                            value="{{tag.tag_id}}" 
+                            data-category-id="{{tag.category_id}}"
+                            data-name="{{tag.name}}">{{tag.name}}</option>
+                {% endfor %}
+            </select>
+            (2차 카테고리 선택하면 풀림)
+        </div>
+        <button type="button" onclick="upload_meme();">
+            등록
+        </button>
+    </form>
+
+    <div id="mask">
+        <img id="mask-image" 
+            src="https://app.thismeme.me/_next/image?url=https%3A%2F%2Fjjmeme-bucket-2.s3.amazonaws.com%2Fhashed_name_image%2F19137cc6f5a8a95b293e2dd874cdf53beb4d6c2feb7d04c15e86c0c14ae536d5.JPG&w=256&q=75" />
+    </div>
+
+    <script>
+        function readURL(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('image-section').setAttribute('src', e.target.result);  
+                    document.getElementById('mask-image').setAttribute('src', e.target.result);  
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        document.getElementById("image").addEventListener("change", (e) => {
+            readURL(e.target);
+        });
+
+        document.getElementById("sub-category").addEventListener("change", (e) => {
+            const target = e.target;
+            const tags = document.getElementsByClassName("tag-option");
+            let is_set_selected = false;
+            for(const tag of tags){
+                tag.style.display = 'block';
+                if(tag.dataset.categoryId != target.value){
+                    tag.style.display = 'none';
+                } else {
+                    if(!is_set_selected){
+                        tag.selected = true;
+                    }
+                    is_set_selected = true;
+                }
+            }
+
+            document.getElementById("tag-list").removeAttribute("disabled");
+        });
+
+        document.getElementById("tag-list").addEventListener("change", (e) => {
+            const target = e.target;
+            const selectedOption = target.options[target.selectedIndex];
+            const new_selected_tag = document.getElementsByClassName("example-selected-tag-item")[0].cloneNode(true);
+            new_selected_tag.classList.remove("example-selected-tag-item");
+            new_selected_tag.setAttribute("id", `selected-tag-${selectedOption.value}`);
+            new_selected_tag.dataset.tagId = selectedOption.value;
+            new_selected_tag.getElementsByClassName("tag-name")[0].innerHTML = selectedOption.dataset.name;
+            new_selected_tag.getElementsByClassName("delete-button")[0].dataset.tagId = selectedOption.value;
+
+            const selectedTagList = document.getElementById("selected-tag-list");
+            selectedTagList.appendChild(new_selected_tag);
+        });
+
+        const deleteSelectedTag = (target) => {
+            const tagId = target.dataset.tagId;
+            const selectedTagList = document.getElementById("selected-tag-list");
+            const selectedTag = document.getElementById(`selected-tag-${tagId}`);
+            selectedTagList.removeChild(selectedTag);
+        }
+
+        const upload_meme = () => {
+            const image = document.getElementById("image").files[0];
+            const name = document.getElementById("name").value;
+            const description = document.getElementById("description").value;
+            const mainCategoryId = document.getElementById("main-category").value;
+            const subCategoryId = document.getElementById("sub-category").value;
+            const selectedTags = document.getElementsByClassName("selected-tag-item");
+            const selectedTagIds = [];
+
+            for(const selectedTag of selectedTags){
+                if(selectedTag.dataset.tagId === '0') continue;
+                const tagId = selectedTag.dataset.tagId;
+                selectedTagIds.push(tagId);
+            }
+
+            console.log(image, name, description, mainCategoryId, subCategoryId, selectedTagIds);
+
+            let formData = new FormData();
+            formData.append('image', image);
+            formData.append('name', name);
+            formData.append('description', description);
+            formData.append('mainCategoryId', mainCategoryId);
+            formData.append('subCategoryId', subCategoryId);
+            formData.append('selectedTagIds', selectedTagIds);
+
+            if(image === undefined || name === ""){
+                alert("이미지를 설정해주세요");
+                return;
+            }
+
+            document.getElementById("mask").style.display = "block";
+            fetch(`/manage/meme/upload`, {
+                method: "POST",
+                mode: "same-origin",
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const result = data.result;
+                    if(result === "ok"){
+                        alert("등록되었음. 적용되려면 시간 좀 걸림. 이제 페이지 새로고침 됨");
+                        location.reload();
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

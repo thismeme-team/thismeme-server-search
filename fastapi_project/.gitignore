@@ -1,0 +1,32 @@
+# env
+.env
+
+# secrets
+secrets
+meme-369708-e4bd2f8056f2.json
+meme-369708-e4bd2f8056f2.json
+token.json
+
+# test codes
+experiments/detect_same_image.py
+# image_vector.py
+experiment/
+experiments/google_crawling.py
+experiments/google_crawling2.py
+build_data/upload_image.py
+experiments/word2vec_api.py
+
+# images
+park
+crawling_images/
+tagged_*
+google_drive_images/
+img/
+
+# logs
+logs/
+
+# etc
+__pycache__/
+.DS_Store
+ls/

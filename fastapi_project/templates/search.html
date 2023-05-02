@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        .meme_image{
+            width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <input id="search_input" type="text" placeholder="검색 키워드 입력"/>
+    <button id="search_button">검색</button>
+    <div id="result_list_wrapper">
+    </div>
+
+    <script>
+        function search(){
+            const target = document.getElementById("search_input");
+            const value = target.value;
+            console.log(value);
+
+            fetch(`https://search.thismeme.me/search?keyword=${value}`)
+            .then(response => response.json())
+            .then(data_arr => {
+                document.getElementById("result_list_wrapper").innerHTML = "";
+                console.log(data_arr);
+                console.log(data_arr.memes);
+                for(const key in data_arr.memes){
+                    console.log(key, data_arr.memes[key]);
+                    const meme = data_arr.memes[key];
+                    console.log(meme);
+                    document.getElementById("result_list_wrapper").innerHTML += `
+                        <div>
+                            <div>제목: ${meme.name}</div>
+                            <img class="meme_image" src="${meme.image.images[0].imageUrl}"/>
+                        </div>
+                    `
+                }
+            });
+        }
+
+        document.getElementById("search_button").addEventListener("click", function(event){
+            search();
+        });
+
+        document.addEventListener("keyup", function(event) {
+            if (event.keyCode === 13) {
+                search();
+            }
+        });
+    </script>
+</body>
+</html>
