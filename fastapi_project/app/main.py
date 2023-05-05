@@ -806,7 +806,8 @@ async def search_by_bot(ctx, *keyword):
     if not datas:
         view = View()
         button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
-        await ctx.send(embed=discord.Embed(title=f"'{keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+        view.add_item(button)
+        await ctx.send(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
     else:
         view = View()
         for data in datas:
