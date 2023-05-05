@@ -756,12 +756,34 @@ bot = commands.Bot(command_prefix=">", intents=intents)
 
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 
+@bot.event
+async def on_guild_join(guild):
+    guild = bot.get_guild(guild.id)
+    target_channel = guild.text_channels[0]
+    channels = sorted(guild.text_channels, key=lambda x: x.position)
+    logger.info(f"Joined new Server/id: {guild.id}, name: {guild.name}")
+    for channel in channels:
+        if "moderator-only" not in channel.name:
+            target_channel = channel
+            break
+    join_message = """
+안녕하세요, thismeme 봇을 설치해주셔서 감사합니다
+
+사용법)
+1. 키워드 검색
+    >밈 키워드
+    ex) >밈 박명수
+
+2. 결과로 나온 검색 결과 버튼 클릭
+"""
+    await target_channel.send(join_message)
+
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
     logger.info(f"keyword: {full_keyword}")
 
-    _index = "meme"  # index name
+    _index = "meme"
 
     doc = {
         "query": {
