@@ -1,0 +1,16 @@
+{% extends 'admin/base.html'%}
+{% block content %}
+    {{data.meme.meme_id}}, {{data.image.image_url}}
+    <div id="meme-detail-wrapper">
+        <img src="{{data.image.image_url}}" width="500px" />
+        <div>
+            제목: <input type="text" value="{{data.meme.name}}" placeholder="밈 제목" />
+        </div>
+        <div>
+            설명: <input type="text" value="{{data.meme.description}}" placeholder="밈 설명" />
+        </div>
+        <div>
+            
+        </div>
+    </div>
+{% endblock %}

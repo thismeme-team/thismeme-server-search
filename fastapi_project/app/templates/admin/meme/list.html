@@ -1,0 +1,95 @@
+{% extends 'admin/base.html'%}
+{% block content %}
+    <style>
+        .meme-domain-wrapper{
+            width: 100%;
+            height: 40px;
+        }
+        .meme-item-wrapper{
+            width: 100%;
+            height: 30px;
+        }
+        .meme-domain,
+        .meme-item{
+            float: left;
+            border-right: 1px solid black;
+            height: 100%;
+        }
+
+        .meme-domain{
+            text-align: center;
+            background-color: antiquewhite;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .meme-id-wrapper{
+            width: 50px;
+            text-align: center;
+        }
+        .meme-name-wrapper{
+            width: 500px;
+        }
+        .meme-descrption-wrapper{
+            width: 300px;
+        }
+        .meme-tags-wrapper{
+            width: 300px;
+        }
+        .meme-share-count-wrapper{
+            width: 100px;
+            text-align: center;
+        }
+        .meme-view-count-wrapper{
+            width: 100px;
+            text-align: center;
+        }
+        .meme-created-date-wrapper{
+            width: 200px;
+            text-align: center;
+        }
+    </style>
+    <style>
+        .meme-domain-wrapper,
+        .meme-item-wrapper:hover{
+            background-color: beige;
+            cursor: pointer;
+        }
+    </style>
+
+    <div>
+        Total: {{data.total_count}}
+    </div>
+    <div id="meme-list">
+        <div class="meme-domain-wrapper">
+            <div class="meme-domain meme-id-wrapper">ID</div>
+            <div class="meme-domain meme-name-wrapper">Name</div>
+            <div class="meme-domain meme-descrption-wrapper">Description</div>
+            <div class="meme-domain meme-tags-wrapper">Tags</div>
+            <div class="meme-domain meme-share-count-wrapper">Share</div>
+            <div class="meme-domain meme-view-count-wrapper">View</div>
+            <div class="meme-domain meme-created-date-wrapper">Created Date</div>
+        </div>
+        {% for meme in data.memes %}
+            <div class="meme-item-wrapper" data-meme-id="{{meme.meme_id}}">
+                <div class="meme-item meme-id-wrapper">{{meme.meme_id}}</div>
+                <div class="meme-item meme-name-wrapper">{{meme.name}}</div>
+                <div class="meme-item meme-descrption-wrapper">{{meme.description}}</div>
+                <div class="meme-item meme-tags-wrapper">{{meme.tags}}</div>
+                <div class="meme-item meme-share-count-wrapper">{{meme.share_count}}</div>
+                <div class="meme-item meme-view-count-wrapper">{{meme.view_count}}</div>
+                <div class="meme-item meme-created-date-wrapper">{{meme.created_date}}</div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById("meme-list").addEventListener("click", (e) => {
+            const target = e.target.parentNode;
+            const memeId = target.dataset.memeId;
+            
+            const detailUrl = `${location.protocol}//${location.host}/admin/meme/detail/${memeId}`;
+            location.href = detailUrl;
+        });
+    </script>
+{% endblock %}

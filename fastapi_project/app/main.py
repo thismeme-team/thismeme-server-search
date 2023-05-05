@@ -38,7 +38,7 @@ pymysql.install_as_MySQLdb()
 
 app = FastAPI()
 logger.add("../logs/search_log_{time}", rotation="12:00")
-templates = Jinja2Templates(directory="../templates/")
+templates = Jinja2Templates(directory="../app/app/templates/")
 
 load_dotenv(dotenv_path="../app/secrets/.env")
 
@@ -803,18 +803,23 @@ async def search_by_bot(ctx, *keyword):
     res = es.search(index=_index, body=doc)
     datas = res["hits"]["hits"]
 
-    view = View()
-    for data in datas:
-        button = Button(label=data['_source']['name'])
-        async def make_callback(data):
-            async def _callback(interaction):
-                await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
-            return _callback
-        _callback = await make_callback(data)
-        button.callback = _callback
-        view.add_item(button)
+    if not datas:
+        view = View()
+        button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
+        await ctx.send(embed=discord.Embed(title=f"'{keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+    else:
+        view = View()
+        for data in datas:
+            button = Button(label=data['_source']['name'])
+            async def make_callback(data):
+                async def _callback(interaction):
+                    await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
+                return _callback
+            _callback = await make_callback(data)
+            button.callback = _callback
+            view.add_item(button)
 
-    await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
+        await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
 
 
 async def run():
@@ -822,3 +827,28 @@ async def run():
 
 
 asyncio.create_task(run())
+
+
+@app.get(path="/admin/meme/list")
+async def admin_meme_list(request: Request):
+    db = db_session()
+    memes = db.query(models.MEME).all()
+    db.close()
+
+    data = {
+        'memes': memes,
+        'total_count': len(memes),
+    }
+    return templates.TemplateResponse("admin/meme/list.html", context={"request": request, "data": data})
+
+@app.get(path="/admin/meme/detail/{meme_id}")
+async def admin_meme_detail(request: Request, meme_id: str):
+    db = db_session()
+    meme, image = db.query(models.MEME, models.IMAGE, models.MEME_TAG, models.TAG).filter(models.MEME.meme_id == models.IMAGE.meme_id).filter_by(meme_id=meme_id)[0]
+    db.close()
+
+    data = {
+        'meme': meme,
+        'image': image
+    }
+    return templates.TemplateResponse("admin/meme/detail.html", context={"request": request, "data": data})
