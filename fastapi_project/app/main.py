@@ -41,8 +41,8 @@ app = FastAPI()
 templates = Jinja2Templates(directory="../app/app/templates/")
 
 today = datetime.datetime.now().strftime("%Y-%m-%d")
-# logger.add(f"../app/logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
-logger.add(find_dotenv(f"logs/search_log_{today}.log"), rotation="00:00", compression=None, level="INFO")
+logger.add(f"../app/logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
+# logger.add(find_dotenv(f"logs/search_log_{today}.log"), rotation="00:00", compression=None, level="INFO")
 
 load_dotenv(dotenv_path="../app/secrets/.env")
 
