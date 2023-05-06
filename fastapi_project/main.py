@@ -842,7 +842,7 @@ async def run():
     await bot.start(DISCORD_TOKEN)
 
 
-# asyncio.create_task(run())
+asyncio.create_task(run())
 
 
 @app.get(path="/admin/meme/list")
