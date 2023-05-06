@@ -1,7 +1,7 @@
 import boto3
 import os 
 import pymysql
-from app import models
+import models
 import hashlib
 from botocore.client import Config
 from dotenv import find_dotenv, load_dotenv

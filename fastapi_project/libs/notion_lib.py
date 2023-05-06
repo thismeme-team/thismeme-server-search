@@ -281,6 +281,7 @@ if __name__ == "__main__":
     # result = search_by_url('https://jjmeme-bucket-2.s3.amazonaws.com/무한도전_489.jpg')
     # print(result)
     # pass
+
     import pymysql
     pymysql.install_as_MySQLdb()
     DB_USERNAME = os.getenv("DB_USERNAME")
@@ -297,57 +298,61 @@ if __name__ == "__main__":
     notion_secret_key = os.environ.get("NOTION_SECRET_KEY")
     notion = Client(auth=notion_secret_key)
     databases = notion.search(filter={"property": "object", "value": "database"})
-    pprint(databases['results'])
+    # pprint(databases['results'])
     database_id = databases['results'][0]['id']
-    # databases = notion.databases.retrieve(database_id=database_id)
-    pprint(databases)
+    # pprint(databases['results'][1]['properties'])
+    # properties = databases['results'][1]['properties']
+    # pprint(databases['results'][1]['parent'])
 
-    results = []
-    cursor = None
-    while True:
-        print(cursor)
-        resp = notion.databases.query(database_id=database_id, start_cursor=cursor)
-        results.extend(resp['results'])
+    # filtered_properties = dict(filter(lambda x: 'multi_select' in x[1], properties.items()))
+    # pprint(filtered_properties.keys())
 
-        if not resp['has_more']:
-            break
-        cursor = resp['next_cursor']
+    # results = []
+    # cursor = None
+    # while True:
+    #     print(cursor)
+    #     resp = notion.databases.query(database_id=database_id, start_cursor=cursor)
+    #     results.extend(resp['results'])
 
-    print(len(results))
-    current_category = None
-    db = db_session()
-    for result in results:
-        if result['properties']['태그 카테고리']['title']:
-            category = result['properties']['태그 카테고리']['title'][0]['plain_text'].strip()
-            pprint(result)
-            print(category)
+    #     if not resp['has_more']:
+    #         break
+    #     cursor = resp['next_cursor']
 
-            for relation in result['properties']['하위 항목']['relation']:
-                page = notion.pages.retrieve(page_id=relation['id'])
-                sub_category = page['properties']['2차 카테고리']['multi_select'][0]['name'].strip()
-                tag = page['properties']['태그']['rich_text'][0]['text']['content'].strip()
-                print(category, sub_category, tag)
+    # print(len(results))
+    # current_category = None
+    # db = db_session()
+    # for result in results:
+    #     if result['properties']['태그 카테고리']['title']:
+    #         category = result['properties']['태그 카테고리']['title'][0]['plain_text'].strip()
+    #         pprint(result)
+    #         print(category)
 
-                _category = db.query(models.MAIN_CATEGORY).filter_by(name=category)[0]
-                _sub_category = db.query(models.CATEGORY).filter_by(name=sub_category)
-                if not list(_sub_category):
-                    _sub_category = models.CATEGORY(main_category_id=_category.main_category_id, name=sub_category)
-                    db.add(_sub_category)
-                    db.flush()
-                    db.refresh(_sub_category)
-                else:
-                    _sub_category = _sub_category[0]
+    #         for relation in result['properties']['하위 항목']['relation']:
+    #             page = notion.pages.retrieve(page_id=relation['id'])
+    #             sub_category = page['properties']['2차 카테고리']['multi_select'][0]['name'].strip()
+    #             tag = page['properties']['태그']['rich_text'][0]['text']['content'].strip()
+    #             print(category, sub_category, tag)
 
-                _tag = db.query(models.TAG).filter_by(name=tag)
-                if not list(_tag):
-                    _tag = models.TAG(category_id=_sub_category.category_id, name=tag)
-                    db.add(_tag)
-                    db.flush()
-                    db.refresh(_tag)
-                else:
-                    _tag = _tag[0]
-                    _tag.category_id = _sub_category.category_id
+    #             _category = db.query(models.MAIN_CATEGORY).filter_by(name=category)[0]
+    #             _sub_category = db.query(models.CATEGORY).filter_by(name=sub_category)
+    #             if not list(_sub_category):
+    #                 _sub_category = models.CATEGORY(main_category_id=_category.main_category_id, name=sub_category)
+    #                 db.add(_sub_category)
+    #                 db.flush()
+    #                 db.refresh(_sub_category)
+    #             else:
+    #                 _sub_category = _sub_category[0]
 
-            # break
-            db.commit()
-    db.close()
+    #             _tag = db.query(models.TAG).filter_by(name=tag)
+    #             if not list(_tag):
+    #                 _tag = models.TAG(category_id=_sub_category.category_id, name=tag)
+    #                 db.add(_tag)
+    #                 db.flush()
+    #                 db.refresh(_tag)
+    #             else:
+    #                 _tag = _tag[0]
+    #                 _tag.category_id = _sub_category.category_id
+
+    #         # break
+    #         db.commit()
+    # db.close()

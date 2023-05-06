@@ -2,7 +2,7 @@
 from fastapi_project.libs import s3_lib, notion_lib
 import os
 import pymysql
-from fastapi_project.app import models
+from fastapi_project import models
 import requests
 import time
 import concurrent.futures

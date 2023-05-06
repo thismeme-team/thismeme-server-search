@@ -1,14 +1,13 @@
 import asyncio
 import hashlib
 import io
-from fastapi import FastAPI, Request, Body
-from pydantic import BaseModel
+from fastapi import Request
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi import FastAPI, status
 from requests_aws4auth import AWS4Auth
 from fastapi.responses import JSONResponse
-from dotenv import find_dotenv, load_dotenv
+from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from opensearchpy import OpenSearch, RequestsHttpConnection
@@ -21,7 +20,7 @@ from tqdm import tqdm
 from io import BytesIO
 from pprint import pprint
 from libs import s3_main_lib
-from . import models
+import models
 from discord.ext import commands
 from discord.ui import Button, View
 
@@ -32,19 +31,17 @@ import os
 import random
 import requests
 import datetime
-import logging
-
+from hanspell import spell_checker
 
 pymysql.install_as_MySQLdb()
 
 app = FastAPI()
-templates = Jinja2Templates(directory="../app/app/templates/")
+templates = Jinja2Templates(directory="./templates/")
 
 today = datetime.datetime.now().strftime("%Y-%m-%d")
-logger.add(f"../app/logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
-# logger.add(find_dotenv(f"logs/search_log_{today}.log"), rotation="00:00", compression=None, level="INFO")
+logger.add(f"./logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
 
-load_dotenv(dotenv_path="../app/secrets/.env")
+load_dotenv(dotenv_path="./secrets/.env")
 
 # AWS_ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY")
 # AWS_SECRET_KEY = os.environ.get("AWS_SECRET_KEY")
@@ -326,14 +323,23 @@ def recommend_tags(tag: str):
     responses={200: {"description": "200 응답 데이터는 data 키 안에 들어있음"}},
 )
 async def search(request: Request, keyword: str, offset: int = 0, limit: int = 30, sort: str = ""):
-    logger.info(f"[{request.client.host}] keyword: {keyword}")
+    full_keyword = keyword
+    try:
+        checked_keyword = spell_checker.check(keyword).as_dict()
+        checked_keyword = checked_keyword['checked']
+        logger.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: {checked_keyword}")
+
+        if keyword != checked_keyword:
+            full_keyword = f"{keyword} {checked_keyword}"
+    except:
+        logger.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: Error")
 
     _index = "meme"  # index name
 
     doc = {
         "query": {
             "bool": {
-                "should": get_search_sholud_query(keyword),
+                "should": get_search_sholud_query(full_keyword),
                 "minimum_should_match": 1,
                 "filter": {
                     "exists" : {"field" : "images"}
@@ -535,7 +541,7 @@ import zipfile
 async def get_logs(request: Request):
     logs = []
 
-    dir_path = "../logs/"
+    dir_path = "logs/"
     for path in os.listdir(dir_path):
         try:
             if ".zip" in path:
@@ -635,14 +641,15 @@ async def db_viewer_users(request: Request):
 async def tag_manager(request: Request):
     db = db_session()
     main_categories = db.query(models.MAIN_CATEGORY).all()
-    categories = db.query(models.CATEGORY).all()
+    categories = db.query(models.CATEGORY).order_by(models.CATEGORY.main_category_id).all()
 
     category_datas = {}
     for main_category in main_categories:
         category_datas[main_category] = {}
         sub_categories = db.query(models.CATEGORY).filter_by(main_category_id = main_category.main_category_id)
         for sub_category in sub_categories:
-            category_datas[main_category][sub_category] = db.query(models.TAG).filter_by(category_id = sub_category.category_id)
+            category_datas[main_category][sub_category] = db.query(
+                models.TAG).filter_by(category_id = sub_category.category_id)
 
     db.close()
 
@@ -672,6 +679,7 @@ async def change_tag(tag_id: str, request: Request):
 
     tag_name = body['tag_name']
     category_id = body['category_id']
+    print(tag_name, category_id)
 
     # 중복
     if db.query(models.TAG).filter_by(name=tag_name, category_id=category_id).first():
@@ -834,7 +842,7 @@ async def run():
     await bot.start(DISCORD_TOKEN)
 
 
-asyncio.create_task(run())
+# asyncio.create_task(run())
 
 
 @app.get(path="/admin/meme/list")

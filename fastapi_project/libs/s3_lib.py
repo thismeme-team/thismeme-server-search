@@ -1,11 +1,8 @@
 import boto3
 import os 
 import pymysql
-from fastapi_project.app import models
 import hashlib
-from botocore.client import Config
 from dotenv import find_dotenv, load_dotenv
-from PIL import Image
 from pprint import pprint
 from tqdm import tqdm
 from notion_lib import get_image_url_list

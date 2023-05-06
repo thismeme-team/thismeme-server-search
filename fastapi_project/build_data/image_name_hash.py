@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 import pymysql
-from fastapi_project.app import models
+from fastapi_project import models
 import os
 
 pymysql.install_as_MySQLdb()

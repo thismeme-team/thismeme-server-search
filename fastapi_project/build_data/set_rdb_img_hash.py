@@ -1,4 +1,3 @@
-from pprint import pprint
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from tqdm import tqdm
@@ -7,7 +6,7 @@ from PIL import Image
 from io import BytesIO
 
 import pymysql
-from fastapi_project.app import models
+from fastapi_project import models
 import os
 import imagehash
 import requests

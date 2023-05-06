@@ -76,7 +76,7 @@ class CATEGORY(Base):
     priority = Column(Integer, default=0)
     icon = Column(String, nullable=True)
     tags = relationship("TAG", back_populates="category")
-    main_category = relationship("MAIN_CATEGORY", back_populates="categories")
+    main_category = relationship("MAIN_CATEGORY", back_populates="categories", lazy='subquery')
 
 class MAIN_CATEGORY(Base):
     __tablename__ = "MAIN_CATEGORY"

@@ -81,11 +81,11 @@
                     <div class="tag-field tag-name-wrapper">
                         태그명
                     </div>
-                    <div class="tag-field tag-category-wrapper">
+                    <!-- <div class="tag-field tag-category-wrapper">
                         1차 카테고리
-                    </div>
+                    </div> -->
                     <div class="tag-field tag-category-wrapper">
-                        2차 카테고리
+                        1차 카테고리 / 2차 카테고리
                     </div>
                 </div>
                     {% for tag in data.category_datas[main_category][sub_category] %}
@@ -94,24 +94,24 @@
                             <div class="tag-field tag-name-wrapper">
                                 <input type="text" id="tag-name-{{tag.tag_id}}" value="{{tag.name}}" maxlength="11"/>
                             </div>
-                            <div class="tag-field tag-category-wrapper">
-                                <select id="tag-category-{{tag.tag_id}}">
+                            <!-- <div class="tag-field tag-category-wrapper">
+                                <select id="tag-main-category-{{tag.tag_id}}">
                                     {% for main_category in data.main_categories %}
                                         {% if tag.category.main_category.main_category_id == main_category.main_category_id %}
                                             <option selected value="{{main_category.main_category_id}}">{{main_category.name}}</option>
                                         {% else %}
-                                            <option>{{main_category.name}}</option>
+                                            <option value="{{main_category.main_category_id}}">{{main_category.name}}</option>
                                         {% endif %}
                                     {% endfor %}
                                 </select>
-                            </div>
+                            </div> -->
                             <div class="tag-field tag-category-wrapper">
                                 <select id="tag-category-{{tag.tag_id}}">
                                     {% for category in data.categories %}
                                         {% if tag.category_id == category.category_id %}
-                                            <option selected value="{{category.category_id}}">{{category.name}}</option>
+                                            <option selected value="{{category.category_id}}">{{category.main_category.name}} / {{category.name}}</option>
                                         {% else %}
-                                            <option>{{category.name}}</option>
+                                            <option value="{{category.category_id}}">{{category.main_category.name}} / {{category.name}}</option>
                                         {% endif %}
                                     {% endfor %}
                                 </select>
@@ -132,8 +132,6 @@
                 "tag_name": tag_name,
                 "category_id": parseInt(category_id)
             };
-
-            console.log(data);
 
             fetch(`http://localhost/manage/tag/${tag_id}`, {
                 method: "PUT",

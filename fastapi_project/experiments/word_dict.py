@@ -1,17 +1,11 @@
-from pprint import pprint
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from tqdm import tqdm
 from dotenv import load_dotenv
-from PIL import Image
-from io import BytesIO
 from konlpy.tag import Okt
 
-from fastapi_project.app import models
+from fastapi_project import models
 import pymysql
 import os
-import imagehash
-import requests
 
 pymysql.install_as_MySQLdb()
 
