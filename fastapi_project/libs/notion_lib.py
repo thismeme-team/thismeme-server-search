@@ -1,4 +1,4 @@
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 from notion_client import Client
 from PIL import Image
 import requests
@@ -6,24 +6,21 @@ from io import BytesIO
 
 import os
 from pprint import pprint
+from sqlalchemy import create_engine
 from tqdm import tqdm
 
 from google.cloud import vision
 from konlpy.tag import Okt
 from PIL import Image
-from hanspell import spell_checker
 
 import io
 import re
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "secrets/meme-369708-e4bd2f8056f2.json"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "./secrets/meme-369708-e4bd2f8056f2.json"
+# client = vision.ImageAnnotatorClient()
 
-client = vision.ImageAnnotatorClient()
+load_dotenv(dotenv_path=find_dotenv(filename="secrets/.env"))
 
-
-load_dotenv(dotenv_path="../secrets/.env")
-
- 
 notion_secret_key = os.environ.get("NOTION_SECRET_KEY")
 notion = Client(auth=notion_secret_key)
 
@@ -106,7 +103,7 @@ def update_title_from_image_caption():
                 _img.save(buffer, format="png")
 
                 image = vision.Image(content=buffer.getvalue())
-                response = client.text_detection(image=image)
+                # response = client.text_detection(image=image)
 
                 try:
                     for ta in response.text_annotations:
@@ -127,7 +124,7 @@ def update_title_from_image_caption():
                             for word in words:
                                 hangul = re.compile(r'[^ .?!~\(\)ㄱ-ㅣ가-힣0-9+]')
                                 hangul = hangul.sub('', word)
-                                hangul = spell_checker.check(hangul).as_dict()
+                                # hangul = spell_checker.check(hangul).as_dict()
                                 hangul = hangul['checked']
                                 if len(hangul) > 3 and not hangul.strip().replace(" ", "").isnumeric():
                                     result.append(hangul)
@@ -281,6 +278,76 @@ if __name__ == "__main__":
     # print(len(get_title_list()))
     # pprint(databases['properties'].keys())
     # update_title_from_image_caption()
-    result = search_by_url('https://jjmeme-bucket-2.s3.amazonaws.com/무한도전_489.jpg')
-    print(result)
-    pass
+    # result = search_by_url('https://jjmeme-bucket-2.s3.amazonaws.com/무한도전_489.jpg')
+    # print(result)
+    # pass
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    DB_USERNAME = os.getenv("DB_USERNAME")
+    DB_PASSWORD = os.getenv("DB_PASSWORD")
+    DB_HOST = os.getenv("DB_HOST","localhost")
+    DB_PORT = os.getenv("DB_PORT", 3306)
+    DB_DATABASE = os.getenv("DB_DATABASE")
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    import models
+    DATABASE_URL = f"mysql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}"
+    engine = create_engine(DATABASE_URL, encoding="utf-8", pool_recycle=3600)
+    db_session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+
+    notion_secret_key = os.environ.get("NOTION_SECRET_KEY")
+    notion = Client(auth=notion_secret_key)
+    databases = notion.search(filter={"property": "object", "value": "database"})
+    pprint(databases['results'])
+    database_id = databases['results'][0]['id']
+    # databases = notion.databases.retrieve(database_id=database_id)
+    pprint(databases)
+
+    results = []
+    cursor = None
+    while True:
+        print(cursor)
+        resp = notion.databases.query(database_id=database_id, start_cursor=cursor)
+        results.extend(resp['results'])
+
+        if not resp['has_more']:
+            break
+        cursor = resp['next_cursor']
+
+    print(len(results))
+    current_category = None
+    db = db_session()
+    for result in results:
+        if result['properties']['태그 카테고리']['title']:
+            category = result['properties']['태그 카테고리']['title'][0]['plain_text'].strip()
+            pprint(result)
+            print(category)
+
+            for relation in result['properties']['하위 항목']['relation']:
+                page = notion.pages.retrieve(page_id=relation['id'])
+                sub_category = page['properties']['2차 카테고리']['multi_select'][0]['name'].strip()
+                tag = page['properties']['태그']['rich_text'][0]['text']['content'].strip()
+                print(category, sub_category, tag)
+
+                _category = db.query(models.MAIN_CATEGORY).filter_by(name=category)[0]
+                _sub_category = db.query(models.CATEGORY).filter_by(name=sub_category)
+                if not list(_sub_category):
+                    _sub_category = models.CATEGORY(main_category_id=_category.main_category_id, name=sub_category)
+                    db.add(_sub_category)
+                    db.flush()
+                    db.refresh(_sub_category)
+                else:
+                    _sub_category = _sub_category[0]
+
+                _tag = db.query(models.TAG).filter_by(name=tag)
+                if not list(_tag):
+                    _tag = models.TAG(category_id=_sub_category.category_id, name=tag)
+                    db.add(_tag)
+                    db.flush()
+                    db.refresh(_tag)
+                else:
+                    _tag = _tag[0]
+                    _tag.category_id = _sub_category.category_id
+
+            # break
+            db.commit()
+    db.close()

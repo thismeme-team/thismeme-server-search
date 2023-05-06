@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from fastapi import FastAPI, status
 from requests_aws4auth import AWS4Auth
 from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from opensearchpy import OpenSearch, RequestsHttpConnection
@@ -32,13 +32,17 @@ import os
 import random
 import requests
 import datetime
+import logging
 
 
 pymysql.install_as_MySQLdb()
 
 app = FastAPI()
-logger.add("../logs/search_log_{time}", rotation="12:00")
 templates = Jinja2Templates(directory="../app/app/templates/")
+
+today = datetime.datetime.now().strftime("%Y-%m-%d")
+# logger.add(f"../app/logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
+logger.add(find_dotenv(f"logs/search_log_{today}.log"), rotation="00:00", compression=None, level="INFO")
 
 load_dotenv(dotenv_path="../app/secrets/.env")
 
@@ -338,13 +342,14 @@ async def search(request: Request, keyword: str, offset: int = 0, limit: int = 3
         },
         "from": offset,
         "size": limit,
+        "track_total_hits": True,
         "sort": [{"_score": "desc"}],
     }
 
     res = es.search(index=_index, body=doc)
-    # print(res['hits']['hits'])
     memes = clean_data(res["hits"]["hits"])
-    result = {"memes": sort_data(memes, sort), "count": len(memes)}
+    total_count = res['hits']['total']['value']
+    result = {"memes": sort_data(memes, sort), "count": len(memes), "totalCount": total_count}
     return JSONResponse(content=result)
 
 
@@ -386,12 +391,14 @@ async def search_by_tag(request: Request, keyword: str, offset: int = 0, limit: 
             },
             "from": offset,
             "size": limit,
+            "track_total_hits": True,
             "sort": [{"_score": "desc"}],
         }
 
         res = es.search(index=_index, body=doc)
         memes = clean_data(res["hits"]["hits"])
-        result = {"memes": sort_data(memes, sort), "count": len(memes)}
+        total_count = res['hits']['total']['value']
+        result = {"memes": sort_data(memes, sort), "count": len(memes), "totalCount": total_count}
 
     db.close()
     return JSONResponse(content=result)
@@ -781,7 +788,7 @@ async def on_guild_join(guild):
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
-    logger.info(f"keyword: {full_keyword}")
+    logger.info(f"Search by bot/ keyword: {full_keyword}")
 
     _index = "meme"
 
@@ -845,7 +852,10 @@ async def admin_meme_list(request: Request):
 @app.get(path="/admin/meme/detail/{meme_id}")
 async def admin_meme_detail(request: Request, meme_id: str):
     db = db_session()
-    meme, image = db.query(models.MEME, models.IMAGE, models.MEME_TAG, models.TAG).filter(models.MEME.meme_id == models.IMAGE.meme_id).filter_by(meme_id=meme_id)[0]
+    meme = db.query(models.MEME).filter_by(meme_id=meme_id)[0]
+    image = db.query(models.IMAGE).filter_by(meme_id=meme_id)
+    if image:
+        image = image[0]
     db.close()
 
     data = {

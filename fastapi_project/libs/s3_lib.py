@@ -4,7 +4,7 @@ import pymysql
 from fastapi_project.app import models
 import hashlib
 from botocore.client import Config
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from PIL import Image
 from pprint import pprint
 from tqdm import tqdm
@@ -14,7 +14,7 @@ from notion_lib import get_image_url_list
 
 pymysql.install_as_MySQLdb()
 
-load_dotenv(dotenv_path="../secrets/.env")
+load_dotenv(dotenv_path=find_dotenv(filename="secrets/.env"))
 
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 AWS_SECRET_KEY = os.environ.get('AWS_SECRET_KEY')

@@ -34,11 +34,15 @@
             width: 100%;
             height: 50px;
             font-size: 3rem;
+            background-color: cadetblue;
+            color: white;
         }
         .category-wrapper{
             width: 100%;
-            height: 50px;
+            height: 40px;
             font-size: 2rem;
+            background-color: burlywood;
+            padding: 5px 0;
         }
         .tag-item{
             width: 100%;
@@ -57,7 +61,7 @@
             width: 300px;
         }
         .tag-category-wrapper{
-            width: 200px;
+            width: 400px;
         }
     </style>
 </head>
@@ -66,11 +70,11 @@
         {% for main_category, sub_categories in data.category_datas.items() %}
             <div class="category-tag-wrapper">
                 <div class="main-category-wrapper">
-                    {{main_category.name}}
+                    1차 카테고리: {{main_category.name}}
                 </div>
                 {% for sub_category in sub_categories %}
                 <div class="category-wrapper">
-                    {{sub_category.name}}
+                    2차 카테고리: {{sub_category.name}}
                 </div>
                 <div class="tag-domain-wrapper">
                     <div class="tag-field tag-id-wrapper">ID</div>
@@ -88,7 +92,7 @@
                         <div class="tag-item" id="tag-{{tag.tag_id}}">
                             <div class="tag-field tag-id-wrapper">{{tag.tag_id}}</div>
                             <div class="tag-field tag-name-wrapper">
-                                <input type="text" id="tag-name-{{tag.tag_id}}" value="{{tag.name}}"/>
+                                <input type="text" id="tag-name-{{tag.tag_id}}" value="{{tag.name}}" maxlength="11"/>
                             </div>
                             <div class="tag-field tag-category-wrapper">
                                 <select id="tag-category-{{tag.tag_id}}">

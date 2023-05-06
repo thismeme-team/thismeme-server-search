@@ -4,7 +4,7 @@ import pymysql
 from app import models
 import hashlib
 from botocore.client import Config
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.sql import exists
@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 pymysql.install_as_MySQLdb()
 
-load_dotenv(dotenv_path="../secrets/.env")
+load_dotenv(dotenv_path=find_dotenv(filename="secrets/.env"))
 
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY')
 AWS_SECRET_KEY = os.environ.get('AWS_SECRET_KEY')
