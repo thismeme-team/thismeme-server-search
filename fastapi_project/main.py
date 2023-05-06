@@ -796,7 +796,15 @@ async def on_guild_join(guild):
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
-    logger.info(f"Search by bot/ keyword: {full_keyword}")
+    try:
+        checked_keyword = spell_checker.check(full_keyword).as_dict()
+        checked_keyword = checked_keyword['checked']
+        logger.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: {checked_keyword}")
+
+        if full_keyword != checked_keyword:
+            full_keyword = f"{full_keyword} {checked_keyword}"
+    except:
+        logger.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: Error")
 
     _index = "meme"
 
