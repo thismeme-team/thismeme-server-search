@@ -782,12 +782,13 @@ async def on_guild_join(guild):
             target_channel = channel
             break
     join_message = """
-안녕하세요, thismeme 봇을 설치해주셔서 감사합니다
+안녕하세요, thismeme 봇을 설치해주셔서 감사합니다.
+당신이 하고 싶은 말에 가장 어울리는 밈을 추천해 줄게요!
 
 사용법)
 1. 키워드 검색
     >밈 키워드
-    ex) >밈 박명수
+    ex) >밈 여러분 화이팅합시다
 
 2. 결과로 나온 검색 결과 버튼 클릭
 """
