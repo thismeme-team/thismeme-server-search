@@ -39,7 +39,19 @@ app = FastAPI()
 templates = Jinja2Templates(directory="./templates/")
 
 today = datetime.datetime.now().strftime("%Y-%m-%d")
-logger.add(f"./logs/search_log_{today}.log", rotation="00:00", compression=None, level="INFO")
+logger_app = logger.bind(name="app")
+logger_app.add(f"./logs/app/search_app_log_{today}.log", 
+               rotation="00:00", 
+               compression=None, 
+               level="INFO",
+               filter=lambda x: not x["message"].startswith("Search by bot/"))
+
+logger_bot = logger.bind(name="bot")
+logger_bot.add(f"./logs/bot/search_bot_log_{today}.log", 
+               rotation="00:00", 
+               compression=None, 
+               level="INFO",
+               filter=lambda x: x["message"].startswith("Search by bot/"))
 
 load_dotenv(dotenv_path="./secrets/.env")
 
@@ -328,12 +340,12 @@ async def search(request: Request, keyword: str, offset: int = 0, limit: int = 3
     try:
         checked_keyword = spell_checker.check(keyword).as_dict()
         checked_keyword = checked_keyword['checked']
-        logger.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: {checked_keyword}")
+        logger_app.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: {checked_keyword}")
 
         if keyword != checked_keyword:
             full_keyword = f"{keyword} {checked_keyword}"
     except:
-        logger.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: Error")
+        logger_app.info(f"[{request.client.host}] keyword: {keyword}, checked_keyword: Error")
 
     _index = "meme"  # index name
 
@@ -368,7 +380,7 @@ async def search(request: Request, keyword: str, offset: int = 0, limit: int = 3
     responses={200: {"description": "200 응답 데이터는 data 키 안에 들어있음"}},
 )
 async def search_by_tag(request: Request, keyword: str, offset: int = 0, limit: int = 30, sort: str = ""):
-    logger.info(f"[{request.client.host}] keyword: {keyword}")
+    logger_app.info(f"[{request.client.host}] keyword: {keyword}")
 
     db = db_session()
     result = {"memes": [], "count": 0}
@@ -424,7 +436,7 @@ async def search_in_collection(request: Request, collection_id: int, keyword: st
 
     meme_collections = db.query(models.MEME_COLLECTION).filter_by(collection_id=collection_id)
     meme_ids = [str(meme_collection.meme_id) for meme_collection in meme_collections]
-    logger.info(f"meme_ids = {meme_ids}")
+    logger_app.info(f"meme_ids = {meme_ids}")
 
     _index = "meme"  # index name
 
@@ -462,7 +474,7 @@ async def search_in_collection(request: Request, collection_id: int, keyword: st
     responses={200: {"description": "200 응답 데이터는 data 키 안에 들어있음"}},
 )
 async def search_by_nickname(request: Request, keywords: str, offset: int = 0, limit: int = 30, sort: str = ""):
-    logger.info(f"[{request.client.host}] keywords: {keywords}")
+    logger_app.info(f"[{request.client.host}] keywords: {keywords}")
 
     RANDOM_KEYWORD_NUM = 3
     keyword_list = keywords.split(",")
@@ -777,7 +789,7 @@ async def on_guild_join(guild):
     guild = bot.get_guild(guild.id)
     target_channel = guild.text_channels[0]
     channels = sorted(guild.text_channels, key=lambda x: x.position)
-    logger.info(f"Joined new Server/id: {guild.id}, name: {guild.name}")
+    logger_bot.info(f"Joined new Server/id: {guild.id}, name: {guild.name}")
     for channel in channels:
         if "moderator-only" not in channel.name:
             target_channel = channel
@@ -801,12 +813,12 @@ async def search_by_bot(ctx, *keyword):
     try:
         checked_keyword = spell_checker.check(full_keyword).as_dict()
         checked_keyword = checked_keyword['checked']
-        logger.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: {checked_keyword}")
+        logger_bot.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: {checked_keyword}")
 
         if full_keyword != checked_keyword:
             full_keyword = f"{full_keyword} {checked_keyword}"
     except:
-        logger.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: Error")
+        logger_bot.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: Error")
 
     _index = "meme"
 
