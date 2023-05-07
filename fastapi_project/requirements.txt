@@ -79,6 +79,7 @@ notion==0.0.28
 notion-client==2.0.0
 numpy==1.23.4
 oauthlib==3.2.2
+openai==0.27.6
 opencv-python==4.6.0.66
 opensearch-py==2.0.0
 outcome==1.2.0

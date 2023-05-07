@@ -880,3 +880,36 @@ async def admin_meme_detail(request: Request, meme_id: str):
         'image': image
     }
     return templates.TemplateResponse("admin/meme/detail.html", context={"request": request, "data": data})
+
+
+@app.get(path="/admin/openai")
+async def admin_openai(request: Request):
+    db = db_session()
+    main_categories = db.query(models.MAIN_CATEGORY).all()
+    categories = db.query(models.CATEGORY).all()
+
+    db.close()
+
+    data = {
+        'main_categories': main_categories,
+        'categories': categories
+    }
+    return templates.TemplateResponse("openai_test.html", context={"request": request, "data": data})
+
+
+@app.post(path="/admin/openai/recommend")
+async def admin_get_recommend_category(request: Request):
+    from openai_test import get_openai_categorizing
+    body = await request.body()
+    body = json.loads(body)
+
+    tag = body['tag']
+    sub_categories = body['subCategories']
+    sub_categories = list(sub_categories)
+
+    response = get_openai_categorizing(sub_categories, tag)
+
+    content = {
+        "response": response
+    }
+    return JSONResponse(content=content)

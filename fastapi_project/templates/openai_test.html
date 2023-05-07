@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPENAI TEST</title>
+    <style>
+        .category{
+            display: none;
+        }
+
+        li{
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        아래 1차 카테고리 선택 후, 태그명을 입력하면
+        <br/>
+        1차 카테고리에 속해있는 2차 카테고리 중 적절한 카테고리를 추천해드립니다
+    </div>
+    <br/><br/>
+    <div>
+        1차 카테고리: 
+        <select id="main-category">
+            <option disabled selected value="">1차 카테고리 선택</option>
+            {% for main_category in data.main_categories %}
+            <option value="{{main_category.main_category_id}}">{{main_category.name}}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        2차 카테고리 목록:
+        <ul>
+        {% for category in data.categories %}
+            <li class="category {{category.main_category_id}}">{{category.name}}</li>
+        {% endfor %}
+        </ul>
+    </div>
+    <div>
+        <input id="tag-input" type="text" placeholder="태그명 입력" required/>
+        <button onclick="getRecommend();">Go</button>
+    </div>
+    <br/><br/>
+    <div id="recommend-history-wrapper">
+        <div>아래 추천 내역이 표시됩니다. 새로고침하면 날라갑니다.</div>
+        <ol id="recommend-history"></ol>
+    </div>
+
+    <script>
+        document.getElementById("main-category").addEventListener("change", (e) => {
+            const target = e.target;
+            const value = target.value;
+            
+            const categories = document.getElementsByClassName("category");
+            for(const category of categories){
+                category.style.display = "none";
+                if(category.classList.contains(value)){
+                    category.style.display = "block";
+                }
+            }
+        });
+
+        const getRecommend = () => {
+            const mainCategory = document.getElementById("main-category").value;
+            if(!mainCategory){
+                alert("1차 카테고리를 선택해주세요");
+                return;
+            }
+
+            const tag = document.getElementById("tag-input").value;
+            if(!tag){
+                alert("태그를 입력해주세요");
+                return;
+            }
+
+            const subCategories = Array.from(document.getElementsByClassName(mainCategory)).map(x => x.innerHTML);
+
+            const data = {
+                "tag": tag,
+                "subCategories": subCategories
+            };
+
+            fetch("/admin/openai/recommend", {
+                method: "POST",
+                mode: "same-origin",
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const response = data.response.split(" ")[0].replace("'", "");
+
+                    const history = document.createElement("li");
+                    const subCategoriesStr = subCategories.join(", ")
+                    history.innerHTML = `2차 카테고리 목록: ${subCategoriesStr} <br/> 입력: ${tag} <br/> <strong>결과: ${response}</strong>`;
+                    document.getElementById("recommend-history").appendChild(history);
+                });
+        };
+    </script>
+</body>
+</html>
