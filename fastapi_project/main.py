@@ -129,6 +129,7 @@ class Meme(BaseModel):
 class SearchDto(BaseModel):
     memes: List[Meme] = Field(title="meme들이 있는 리스트")
     count: int = Field(title="memes에 들어있는 meme의 개수")
+    totalCount: int = Field(title="검색 결과로 나오는 총 meme 개수")
 
 
 def create_index(_index):
