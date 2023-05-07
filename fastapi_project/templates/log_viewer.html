@@ -5,24 +5,99 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        html, body{
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #log-list-wrapper{
+            width: 100%;
+            height: 90%;
+        }
+        #app-log-list-wrapper,
+        #bot-log-list-wrapper{
+            width: 49.5%;
+            height: 100%;
+            float: left;
+            overflow-y: scroll;
+            overflow-x: hidden;
+        }
+        #center{
+            width: 0.3%;
+            height: 100%;
+            background-color: black;
+            float: left;
+        }
+        .log-list-header{
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        #refresh-button{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 25px;
+            margin-bottom: 5px;
+        }
+        #refresh-button:hover{
+            cursor: pointer;
+            background-color: black;
+            color: white;
+        }
+        #header-wrapper{
+            position: relative;
+            width: 100%;
+            height: 5%;
+        }
+    </style>
 </head>
 <body>
+    <div id="header-wrapper">
+        <button id="refresh-button" onclick="refreshLog();">새 로 고 침</button>
+    </div>
     <div id="log-list-wrapper">
-
+        <div id="app-log-list-wrapper">
+            <div class="log-list-header">서비스 검색 로그</div>
+            <div id="app-log-list"></div>
+        </div>
+        <div id="center"></div>
+        <div id="bot-log-list-wrapper">
+            <div class="log-list-header">봇 검색 로그</div>
+            <div id="bot-log-list"></div>
+        </div>
     </div>
 
     <script>
-        setInterval(() => {
-            fetch(`https://search.thismeme.me/log`)
+        const refreshLog = () => {
+            fetch(`/log/app`)
                 .then(response => response.json())
-                .then(logs => {
-                    console.log(logs);
-                    document.getElementById("log-list-wrapper").innerHTML = "";
+                .then(data => {
+                    const logs = data.logs;
+                    document.getElementById("app-log-list").innerHTML = "";
                     for(let log of logs){
-                        document.getElementById("log-list-wrapper").innerHTML += log + "<br/>";
+                        document.getElementById("app-log-list").innerHTML += log + "<br/>";
                     }
                 });
-        }, 3000);
+
+            fetch(`/log/bot`)
+                .then(response => response.json())
+                .then(data => {
+                    const logs = data.logs;
+                    document.getElementById("bot-log-list").innerHTML = "";
+                    for(let log of logs){
+                        document.getElementById("bot-log-list").innerHTML += log + "<br/>";
+                    }
+                });
+        }
+
+        // setInterval(() => {
+        //     refreshLog();
+        // }, 1000);
     </script>
 </body>
 </html>

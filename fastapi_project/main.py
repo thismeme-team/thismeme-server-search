@@ -549,28 +549,36 @@ async def log_viewer(request: Request):
     return templates.TemplateResponse("log_viewer.html", context={"request": request})
 
 
-import zipfile
-@app.get(path="/log")
-async def get_logs(request: Request):
+@app.get(path="/log/app")
+async def get_app_logs(request: Request):
     logs = []
-
-    dir_path = "logs/"
+    dir_path = "logs/app/"
     for path in os.listdir(dir_path):
         try:
-            if ".zip" in path:
-                with zipfile.ZipFile(path, mode="r") as arch:
-                    name_list = arch.namelist()
-                    for name in name_list:
-                        logs.append(arch.read(name))
-            else:
-                with open(dir_path + path, "rt") as f:
-                    lines = f.readlines()
-                    for line in lines:
-                        logs.append(line)
+            with open(dir_path + path, "rt") as f:
+                lines = f.readlines()
+                for line in lines:
+                    logs.append(line)
         except:
             continue
 
-    return logs
+    return JSONResponse(content={"logs": logs})
+
+
+@app.get(path="/log/bot")
+async def get_bot_logs(request: Request):
+    logs = []
+    dir_path = "logs/bot/"
+    for path in os.listdir(dir_path):
+        try:
+            with open(dir_path + path, "rt") as f:
+                lines = f.readlines()
+                for line in lines:
+                    logs.append(line)
+        except:
+            continue
+
+    return JSONResponse(content={"logs": logs})
 
 
 def get_same_images():
