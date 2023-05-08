@@ -915,6 +915,7 @@ async def _tag_search_callback(full_keyword):
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
+    checked_keyword = None
     try:
         checked_keyword = spell_checker.check(full_keyword).as_dict()
         checked_keyword = checked_keyword['checked']
@@ -926,7 +927,10 @@ async def search_by_bot(ctx, *keyword):
         logger_bot.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: Error")
 
     db = db_session()
-    tag = db.query(models.TAG).filter((models.TAG.name==keyword) | (models.TAG.name==checked_keyword)).first()
+    if checked_keyword:
+        tag = db.query(models.TAG).filter((models.TAG.name==full_keyword) | (models.TAG.name==checked_keyword)).first()
+    else:
+        tag = db.query(models.TAG).filter((models.TAG.name==full_keyword)).first()
     db.close()
 
     if tag:
