@@ -855,7 +855,7 @@ async def _keyword_search_callback(full_keyword):
                 button.callback = _callback
                 view.add_item(button)
 
-            await interaction.response.send_message(embed=discord.Embed(title="밈 선택하기"), view=view)
+            await interaction.response.send_message(embed=discord.Embed(title="키워드 검색 결과> 밈 선택하기"), view=view)
     return _search_callback
 
 
@@ -908,7 +908,7 @@ async def _tag_search_callback(full_keyword):
                 button.callback = _callback
                 view.add_item(button)
 
-            await interaction.response.send_message(embed=discord.Embed(title="밈 선택하기"), view=view)
+            await interaction.response.send_message(embed=discord.Embed(title="태그 검색 결과> 밈 선택하기"), view=view)
     return _search_callback
 
 
