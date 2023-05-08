@@ -815,6 +815,103 @@ async def on_guild_join(guild):
 """
     await target_channel.send(join_message)
 
+
+async def _keyword_search_callback(full_keyword):
+    async def _search_callback(interaction):
+        _index = "meme"
+
+        doc = {
+            "query": {
+                "bool": {
+                    "should": get_search_sholud_query(full_keyword),
+                    "minimum_should_match": 1,
+                    "filter": {
+                        "exists" : {"field" : "images"}
+                    }
+                }
+            },
+            "from": 0,
+            "size": 10,
+            "sort": [{"_score": "desc"}],
+        }
+
+        res = es.search(index=_index, body=doc)
+        datas = res["hits"]["hits"]
+
+        if not datas:
+            view = View()
+            button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
+            view.add_item(button)
+            await interaction.response.send_message(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+        else:
+            view = View()
+            for data in datas:
+                button = Button(label=data['_source']['name'])
+                async def make_callback(data):
+                    async def _callback(interaction):
+                        await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
+                    return _callback
+                _callback = await make_callback(data)
+                button.callback = _callback
+                view.add_item(button)
+
+            await interaction.response.send_message(embed=discord.Embed(title="밈 선택하기"), view=view)
+    return _search_callback
+
+
+async def _tag_search_callback(full_keyword):
+    async def _search_callback(interaction):
+        _index = "meme"
+
+        doc = {
+            "query": {
+                "bool": {
+                    "should": [
+                        {"match_phrase": {"tags.ngram": full_keyword}},
+                        {
+                            "bool": {
+                                "should": [
+                                    {"match": {"translator": "Constance Garnett"}},
+                                    {"match": {"translator": "Louise Maude"}},
+                                ]
+                            }
+                        },
+                    ],
+                    "minimum_should_match": 1,
+                    "filter": {
+                        "exists" : {"field" : "images"}
+                    }
+                }
+            },
+            "from": 0,
+            "size": 10,
+            "sort": [{"_score": "desc"}],
+        }
+
+        res = es.search(index=_index, body=doc)
+        datas = res["hits"]["hits"]
+
+        if not datas:
+            view = View()
+            button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
+            view.add_item(button)
+            await interaction.response.send_message(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+        else:
+            view = View()
+            for data in datas:
+                button = Button(label=data['_source']['name'])
+                async def make_callback(data):
+                    async def _callback(interaction):
+                        await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
+                    return _callback
+                _callback = await make_callback(data)
+                button.callback = _callback
+                view.add_item(button)
+
+            await interaction.response.send_message(embed=discord.Embed(title="밈 선택하기"), view=view)
+    return _search_callback
+
+
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
@@ -825,47 +922,66 @@ async def search_by_bot(ctx, *keyword):
 
         if full_keyword != checked_keyword:
             full_keyword = f"{full_keyword} {checked_keyword}"
-    except:
+    except Exception as e:
         logger_bot.info(f"Search by bot/ keyword: {full_keyword}, checked_keyword: Error")
 
-    _index = "meme"
+    db = db_session()
+    tag = db.query(models.TAG).filter((models.TAG.name==keyword) | (models.TAG.name==checked_keyword)).first()
+    db.close()
 
-    doc = {
-        "query": {
-            "bool": {
-                "should": get_search_sholud_query(full_keyword),
-                "minimum_should_match": 1,
-                "filter": {
-                    "exists" : {"field" : "images"}
-                }
-            }
-        },
-        "from": 0,
-        "size": 10,
-        "sort": [{"_score": "desc"}],
-    }
-
-    res = es.search(index=_index, body=doc)
-    datas = res["hits"]["hits"]
-
-    if not datas:
+    if tag:
         view = View()
-        button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
-        view.add_item(button)
-        await ctx.send(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
-    else:
-        view = View()
-        for data in datas:
-            button = Button(label=data['_source']['name'])
-            async def make_callback(data):
-                async def _callback(interaction):
-                    await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
-                return _callback
-            _callback = await make_callback(data)
-            button.callback = _callback
-            view.add_item(button)
+        keyword_button = Button(label="키워드 검색")
+        keyword_search_callback = await _keyword_search_callback(full_keyword)
+        keyword_button.callback = keyword_search_callback
 
-        await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
+        tag_button = Button(label="태그 검색")
+        tag_search_callback = await _tag_search_callback(tag.name)
+        tag_button.callback = tag_search_callback
+
+        view.add_item(keyword_button)
+        view.add_item(tag_button)
+
+        await ctx.send(embed=discord.Embed(title="입력하신 검색어에 딱 맞는 태그가 존재해요. 태그 검색으로 하실래요?"), view=view)
+
+    # _index = "meme"
+
+    # doc = {
+    #     "query": {
+    #         "bool": {
+    #             "should": get_search_sholud_query(full_keyword),
+    #             "minimum_should_match": 1,
+    #             "filter": {
+    #                 "exists" : {"field" : "images"}
+    #             }
+    #         }
+    #     },
+    #     "from": 0,
+    #     "size": 10,
+    #     "sort": [{"_score": "desc"}],
+    # }
+
+    # res = es.search(index=_index, body=doc)
+    # datas = res["hits"]["hits"]
+
+    # if not datas:
+    #     view = View()
+    #     button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
+    #     view.add_item(button)
+    #     await ctx.send(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+    # else:
+    #     view = View()
+    #     for data in datas:
+    #         button = Button(label=data['_source']['name'])
+    #         async def make_callback(data):
+    #             async def _callback(interaction):
+    #                 await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
+    #             return _callback
+    #         _callback = await make_callback(data)
+    #         button.callback = _callback
+    #         view.add_item(button)
+
+    #     await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
 
 
 async def run():
