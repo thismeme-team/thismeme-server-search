@@ -943,45 +943,45 @@ async def search_by_bot(ctx, *keyword):
         view.add_item(tag_button)
 
         await ctx.send(embed=discord.Embed(title="입력하신 검색어에 딱 맞는 태그가 존재해요. 태그 검색으로 하실래요?"), view=view)
+    else:
+        _index = "meme"
 
-    # _index = "meme"
+        doc = {
+            "query": {
+                "bool": {
+                    "should": get_search_sholud_query(full_keyword),
+                    "minimum_should_match": 1,
+                    "filter": {
+                        "exists" : {"field" : "images"}
+                    }
+                }
+            },
+            "from": 0,
+            "size": 10,
+            "sort": [{"_score": "desc"}],
+        }
 
-    # doc = {
-    #     "query": {
-    #         "bool": {
-    #             "should": get_search_sholud_query(full_keyword),
-    #             "minimum_should_match": 1,
-    #             "filter": {
-    #                 "exists" : {"field" : "images"}
-    #             }
-    #         }
-    #     },
-    #     "from": 0,
-    #     "size": 10,
-    #     "sort": [{"_score": "desc"}],
-    # }
+        res = es.search(index=_index, body=doc)
+        datas = res["hits"]["hits"]
 
-    # res = es.search(index=_index, body=doc)
-    # datas = res["hits"]["hits"]
+        if not datas:
+            view = View()
+            button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
+            view.add_item(button)
+            await ctx.send(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
+        else:
+            view = View()
+            for data in datas:
+                button = Button(label=data['_source']['name'])
+                async def make_callback(data):
+                    async def _callback(interaction):
+                        await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
+                    return _callback
+                _callback = await make_callback(data)
+                button.callback = _callback
+                view.add_item(button)
 
-    # if not datas:
-    #     view = View()
-    #     button = Button(label="밈 등록하러가기", url="https://app.thismeme.me")
-    #     view.add_item(button)
-    #     await ctx.send(embed=discord.Embed(title=f"'{full_keyword}' 에 해당하는 밈이 없어요 :( 등록하러 가실래요?"), view=view)
-    # else:
-    #     view = View()
-    #     for data in datas:
-    #         button = Button(label=data['_source']['name'])
-    #         async def make_callback(data):
-    #             async def _callback(interaction):
-    #                 await interaction.response.send_message(f"https://app.thismeme.me/memes/{data['_id']}")
-    #             return _callback
-    #         _callback = await make_callback(data)
-    #         button.callback = _callback
-    #         view.add_item(button)
-
-    #     await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
+            await ctx.send(embed=discord.Embed(title="밈 선택하기"), view=view)
 
 
 async def run():
