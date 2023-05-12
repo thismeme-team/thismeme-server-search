@@ -785,7 +785,7 @@ async def upload_meme(request: Request):
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix=">", intents=intents)
+bot = commands.Bot(command_prefix=">", intents=intents, description="Thismeme bot")
 
 DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN")
 
@@ -813,7 +813,7 @@ async def on_guild_join(guild):
     await target_channel.send(join_message)
 
 
-@bot.command(aliases=['그밈', '그 밈', '밈'])
+@bot.command(aliases=['그밈', '그 밈', '밈'], help="검색 키워드에 해당하는 밈 목록을 보여줍니다.")
 async def search_by_bot(ctx, *keyword):
     full_keyword = " ".join(keyword)
     try:
