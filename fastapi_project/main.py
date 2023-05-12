@@ -549,11 +549,12 @@ async def log_viewer(request: Request):
     return templates.TemplateResponse("log_viewer.html", context={"request": request})
 
 
-@app.get(path="/log/app")
-async def get_app_logs(request: Request):
+def _get_logs(target):
     logs = []
-    dir_path = "logs/app/"
+    dir_path = f"logs/{target}/"
     for path in sorted(os.listdir(dir_path)):
+        log_date = path.split("_")[-1].split(".")[0]
+        logs.append(f"log_date:{log_date}")
         try:
             with open(dir_path + path, "rt") as f:
                 lines = f.readlines()
@@ -562,22 +563,18 @@ async def get_app_logs(request: Request):
         except:
             continue
 
+    return logs
+
+
+@app.get(path="/log/app")
+async def get_app_logs(request: Request):
+    logs = _get_logs("app")
     return JSONResponse(content={"logs": logs})
 
 
 @app.get(path="/log/bot")
 async def get_bot_logs(request: Request):
-    logs = []
-    dir_path = "logs/bot/"
-    for path in sorted(os.listdir(dir_path)):
-        try:
-            with open(dir_path + path, "rt") as f:
-                lines = f.readlines()
-                for line in lines:
-                    logs.append(line)
-        except:
-            continue
-
+    logs = logs = _get_logs("bot")
     return JSONResponse(content={"logs": logs})
 
 
