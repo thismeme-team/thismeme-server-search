@@ -22,7 +22,7 @@ from pprint import pprint
 from libs import s3_main_lib
 import models
 from discord.ext import commands
-from discord.ui import Button, View
+from discord.ui import View, Button
 
 import discord
 import imagehash
@@ -553,7 +553,7 @@ async def log_viewer(request: Request):
 async def get_app_logs(request: Request):
     logs = []
     dir_path = "logs/app/"
-    for path in os.listdir(dir_path):
+    for path in sorted(os.listdir(dir_path)):
         try:
             with open(dir_path + path, "rt") as f:
                 lines = f.readlines()
@@ -569,7 +569,7 @@ async def get_app_logs(request: Request):
 async def get_bot_logs(request: Request):
     logs = []
     dir_path = "logs/bot/"
-    for path in os.listdir(dir_path):
+    for path in sorted(os.listdir(dir_path)):
         try:
             with open(dir_path + path, "rt") as f:
                 lines = f.readlines()
@@ -814,6 +814,7 @@ async def on_guild_join(guild):
 2. 결과로 나온 검색 결과 버튼 클릭
 """
     await target_channel.send(join_message)
+
 
 @bot.command(aliases=['그밈', '그 밈', '밈'])
 async def search_by_bot(ctx, *keyword):
