@@ -38,16 +38,15 @@ pymysql.install_as_MySQLdb()
 app = FastAPI()
 templates = Jinja2Templates(directory="./templates/")
 
-today = datetime.datetime.now().strftime("%Y-%m-%d")
 logger_app = logger.bind(name="app")
-logger_app.add(f"./logs/app/search_app_log_{today}.log", 
+logger_app.add("./logs/app/search_app_log_{time:YYYY-MM-DD}.log", 
                rotation="00:00", 
                compression=None, 
                level="INFO",
                filter=lambda x: not x["message"].startswith("Search by bot/"))
 
 logger_bot = logger.bind(name="bot")
-logger_bot.add(f"./logs/bot/search_bot_log_{today}.log", 
+logger_bot.add("./logs/bot/search_bot_log_{time:YYYY-MM-DD}.log", 
                rotation="00:00", 
                compression=None, 
                level="INFO",
@@ -932,3 +931,8 @@ async def admin_get_recommend_category(request: Request):
         "response": response
     }
     return JSONResponse(content=content)
+
+
+@app.get(path="/admin/upload")
+async def admin_upload_get_images_from_url(request: Request):
+    return templates.TemplateResponse("upload.html")
