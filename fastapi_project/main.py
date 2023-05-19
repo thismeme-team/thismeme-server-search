@@ -240,7 +240,7 @@ def clean_data(datas):
         for key in data.keys():
             # if key == "tags":
             #     continue
-            if key == "images":
+            if key == "images" and not data[key]:
                 converted_data["image"] = {"images": [], "count": 0}
 
                 for image in data[key].split(","):
@@ -935,4 +935,60 @@ async def admin_get_recommend_category(request: Request):
 
 @app.get(path="/admin/upload")
 async def admin_upload_get_images_from_url(request: Request):
-    return templates.TemplateResponse("upload.html")
+    return templates.TemplateResponse("upload.html", context={"request": request})
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+import time
+from bs4 import BeautifulSoup
+
+def chromeWebdriver():
+    # options = Options()
+    # options.add_argument("lang=ko_KR")  # 언어 설정
+    # options.add_argument("start-maximized") # 창 크기 최대로
+    # options.add_argument("disable-infobars")
+    # options.add_argument("--disable-extensions")    
+    # options.add_experimental_option('detach', True)  # 브라우저 안 닫히게
+    # options.add_experimental_option('excludeSwitches', ['enable-logging'])  # 시스템 장치 에러 숨기기
+    # user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.75 Safari/537.36'
+    # options.add_argument(f'user-agent={user_agent}')
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument('--headless')  # 웹 브라우저를 시각적으로 띄우지 않는 headless chrome 옵션
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--incognito')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-setuid-sandbox')
+    chrome_options.add_argument('--single-process')
+    chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
+    driver = webdriver.Chrome("/usr/src/chrome/chromedriver", chrome_options=chrome_options) 
+    # driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), chrome_options=chrome_options) 
+    # driver = webdriver.Remote(
+    #     command_executor='http://172.19.0.3:4444/wd/hub',
+    #     desired_capabilities=DesiredCapabilities.CHROME,
+    #     options=chrome_options
+    # )
+    return driver
+
+
+@app.post(path="/admin/upload/crawling")
+async def admin_get_recommend_category(request: Request):
+    body = await request.body()
+    body = json.loads(body)
+
+    target_url = body['targetUrl']
+    print(target_url)
+
+    driver = chromeWebdriver()
+    driver.get(target_url)
+    time.sleep(3)
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    image_urls = [img['src'] for img in soup.body.find_all('img')]
+    content = {
+        'result': image_urls
+    }
+    driver.quit()
+    return JSONResponse(content=content)

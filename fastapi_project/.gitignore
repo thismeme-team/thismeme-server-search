@@ -30,3 +30,5 @@ logs/
 __pycache__/
 .DS_Store
 ls/
+meme.json
+revert_db.py

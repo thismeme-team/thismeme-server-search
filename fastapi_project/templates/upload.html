@@ -9,15 +9,31 @@
 <body>
     <div id="url-input-wrapper">
         <input id="url-input" type="text" placeholder="URL 입력" />
+        <button id="get-url-button">Get Images</button>
     </div>
     <div id="image-list-wrapper">
 
     </div>
 
     <script>
-        document.getElementById("url-input").addEventListener("click", () => {
+        document.getElementById("get-url-button").addEventListener("click", () => {
+            const target = document.getElementById("url-input");
+            const targetUrl = target.value;
+            const data = {
+                "targetUrl": targetUrl
+            };
 
-        });
+            fetch("/admin/upload/crawling", {
+                method: "POST",
+                mode: "same-origin",
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const result = data.result;
+                    console.log(result);
+                });
+    });
     </script>
 </body>
 </html>

@@ -29,15 +29,15 @@ notion = Client(auth=notion_secret_key)
 databases = notion.search(filter={"property": "object", "value": "database"})
 # pprint(databases)
 
-database_id = databases['results'][0]['id']
+database_id = databases['results'][1]['id']
 databases = notion.databases.retrieve(database_id=database_id)
-# pprint(databases)
+pprint(databases)
 
 def read():
     condition = []
     condition.append({'property': '밈 제목', 'title': {'is_not_empty' : True}})
     condition.append({'property': '밈 제목', 'title': {'does_not_contain': "#"}})
-    condition.append({'property': '콘텐츠', 'multi_select': {'contains': "무한도전"}})
+    # condition.append({'property': '콘텐츠', 'multi_select': {'contains': "무한도전"}})
     # resp = notion.databases.query(database_id=database_id, filter={'or': condition})
     results = []
     cursor = None

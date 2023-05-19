@@ -5,7 +5,7 @@ import hashlib
 from dotenv import find_dotenv, load_dotenv
 from pprint import pprint
 from tqdm import tqdm
-from notion_lib import get_image_url_list
+from .notion_lib import get_image_url_list
 
 
 
