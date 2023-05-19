@@ -240,7 +240,7 @@ def clean_data(datas):
         for key in data.keys():
             # if key == "tags":
             #     continue
-            if key == "images" and not data[key]:
+            if key == "images" and data[key]:
                 converted_data["image"] = {"images": [], "count": 0}
 
                 for image in data[key].split(","):
