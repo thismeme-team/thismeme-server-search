@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import hashlib
 import io
 from fastapi import Request
@@ -23,6 +24,7 @@ from libs import s3_main_lib
 import models
 from discord.ext import commands
 from discord.ui import View, Button
+from openai_call import get_openai_categorizing
 
 import discord
 import imagehash
@@ -633,90 +635,12 @@ class Account(BaseModel):
     createdDate: str = Field(title="생성일")
     modifiedDate: str = Field(title="수정일")
 
-
-@app.get(path="/db-viewer")
-async def db_viewer(request: Request):
-    return templates.TemplateResponse("db_viewer.html", context={"request": request})
-
-from fastapi.encoders import jsonable_encoder
-@app.get(
-    path="/db-viewer/users",
-    status_code=status.HTTP_200_OK,
-    response_model=Account
-)
-async def db_viewer_users(request: Request):
-    db = db_session()
-    users = db.query(models.ACCOUNT).order_by("account_id").all()
-    content = {
-        "users": jsonable_encoder(users)
-    }
-    db.close()
-    return JSONResponse(content=content)
-
-
-@app.get(path="/manage/tag")
-async def tag_manager(request: Request):
-    db = db_session()
-    main_categories = db.query(models.MAIN_CATEGORY).all()
-    categories = db.query(models.CATEGORY).order_by(models.CATEGORY.main_category_id).all()
-
-    category_datas = {}
-    for main_category in main_categories:
-        category_datas[main_category] = {}
-        sub_categories = db.query(models.CATEGORY).filter_by(main_category_id = main_category.main_category_id)
-        for sub_category in sub_categories:
-            category_datas[main_category][sub_category] = db.query(
-                models.TAG).filter_by(category_id = sub_category.category_id)
-
-    db.close()
-
-    data = {
-        'category_datas': category_datas,
-        'main_categories': main_categories,
-        'categories': categories,
-    }
-    return templates.TemplateResponse("tag_manager.html", context={"request": request, "data": data})
-
-
 class Tag(BaseModel):
     tag_name: str
     category_id: int
 
 
 import json
-
-@app.put(
-    path="/manage/tag/{tag_id}",
-    status_code=status.HTTP_200_OK
-)
-async def change_tag(tag_id: str, request: Request):
-    db = db_session()
-    body = await request.body()
-    body = json.loads(body)
-
-    tag_name = body['tag_name']
-    category_id = body['category_id']
-    print(tag_name, category_id)
-
-    # 중복
-    if db.query(models.TAG).filter_by(name=tag_name, category_id=category_id).first():
-        content = {
-            "result": "duplicate"
-        }
-        db.close()
-        return JSONResponse(content=content)
-
-    tag = db.query(models.TAG).filter_by(tag_id=tag_id).first()
-    tag.name = tag_name
-    tag.category_id = category_id
-
-    db.commit()
-    db.close()
-
-    content = {
-        "result": "ok"
-    }
-    return JSONResponse(content=content)
 
 
 @app.get(path="/manage/upload")
@@ -740,17 +664,21 @@ async def upload_meme(request: Request):
     db = db_session()
     body = await request.form()
 
-    image = body['image']
+    # image = body['image']
+    # image_name = image.filename
+
+    print(body['image'][:50])
+    image_bytes = base64.b64decode(body['image'])
+    image_name = body['imageName']
     name = body['name']
     description = body['description']
-    main_category_id = body['mainCategoryId']
-    category_id = body['subCategoryId']
     selected_tag_ids = body['selectedTagIds'].split(",")
     selected_tag_ids = list(filter(lambda x: len(x) > 0, selected_tag_ids))
 
-    print(image, name, description, main_category_id, category_id, selected_tag_ids)
-    image_name = image.filename
-    image_bytes = await image.read()
+    print(image_bytes[:50], image_name, name, description, selected_tag_ids)
+
+    # image_bytes = await image.read()
+    # data_io = io.BytesIO(image_bytes)
 
     data_io = io.BytesIO(image_bytes)
     from PIL import Image
@@ -917,7 +845,6 @@ async def admin_openai(request: Request):
 
 @app.post(path="/admin/openai/recommend")
 async def admin_get_recommend_category(request: Request):
-    from openai_test import get_openai_categorizing
     body = await request.body()
     body = json.loads(body)
 

@@ -25,6 +25,12 @@ services:
        - "80:80"
       networks:
        - backend
+  # chrome:
+  #     image: selenium/standalone-chrome # vnc가 없는 이미지. 
+  #     ports:
+  #      - "4444:4444"
+  #     networks:
+  #      - backend
  
 networks:
   backend:
