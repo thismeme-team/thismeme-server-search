@@ -582,7 +582,7 @@ async def upload_manager(request: Request):
     return templates.TemplateResponse("upload_manager.html", context={"request": request, "data": data})
 
 
-@app.get(
+@app.post(
     path="/search/image",
     description="동일 이미지 검색 API",
     status_code=status.HTTP_200_OK,
