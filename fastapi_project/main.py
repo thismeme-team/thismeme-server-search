@@ -514,37 +514,6 @@ async def search_by_nickname(request: Request, keywords: str, offset: int = 0, l
     return JSONResponse(content=result)
 
 
-@app.get(
-    path="/search/image",
-    description="동일 이미지 검색 API",
-    status_code=status.HTTP_200_OK,
-    # response_model=SearchDto,
-    responses={200: {"description": "200 응답 데이터는 data 키 안에 들어있음"}},
-)
-async def search_same_image(request: Request, ahash: str, dhash: str, phash: str, offset: int = 0, limit: int = 30):
-    _index = "image"  # index name
-
-    doc = {
-        "query": {
-            "bool": {
-                "must": [
-                    {"match": {"ahash": {"query": ahash, "operator": "and"}}},
-                    {"match": {"dhash": {"query": dhash, "operator": "and"}}},
-                    {"match": {"phash": {"query": phash, "operator": "and"}}},
-                ]
-            }
-        },
-        "from": offset,
-        "size": limit,
-        "sort": {"_score": "desc"},
-    }
-
-    res = es.search(index=_index, body=doc)
-    images = clean_data(res["hits"]["hits"])
-    result = {"images": sort_data(images), "count": len(images)}
-    return JSONResponse(content=result)
-
-
 @app.get(path="/log-viewer")
 async def log_viewer(request: Request):
     return templates.TemplateResponse("log_viewer.html", context={"request": request})
@@ -577,52 +546,6 @@ async def get_app_logs(request: Request):
 async def get_bot_logs(request: Request):
     logs = logs = _get_logs("bot")
     return JSONResponse(content={"logs": logs})
-
-
-def get_same_images():
-    _index = "image"  # index name
-
-    db = db_session()
-
-    import PIL
-    images = db.query(models.IMAGE).all()
-    pbar = tqdm(images)
-    for image in pbar:
-        url = image.image_url
-        print(url)
-        response = requests.get(url)
-        origin_image = PIL.Image.open(BytesIO(response.content))
-        ahash = str(imagehash.average_hash(origin_image))
-        dhash = str(imagehash.dhash(origin_image))
-        phash = str(imagehash.phash_simple(origin_image))
-
-        doc = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"match": {"ahash": {"query": ahash, "operator": "and"}}},
-                        {"match": {"dhash": {"query": dhash, "operator": "and"}}},
-                        {"match": {"phash": {"query": phash, "operator": "and"}}},
-                    ]
-                    # ,"must_not": {
-                    #     "match": {
-                    #         "image_url": url
-                    #     }
-                    # }
-                }
-            },
-            "from": 0,
-            "size": 100,
-            "sort": {"_score": "desc"},
-        }
-
-        res = es.search(index=_index, body=doc)
-        images = clean_data(res["hits"]["hits"])
-        result = {"images": sort_data(images, None), "count": len(images)}
-        if result['count'] > 1:
-            pprint(result)
-    
-    db.close()
 
 
 class Account(BaseModel):
@@ -659,15 +582,59 @@ async def upload_manager(request: Request):
     return templates.TemplateResponse("upload_manager.html", context={"request": request, "data": data})
 
 
+@app.get(
+    path="/search/image",
+    description="동일 이미지 검색 API",
+    status_code=status.HTTP_200_OK,
+    responses={200: {"description": "200 응답 데이터는 data 키 안에 들어있음"}},
+)
+async def search_same_image(request: Request):
+    _index = "image"  # index name
+
+    body = await request.form()
+
+    image_bytes = base64.b64decode(body['image'])
+    data_io = io.BytesIO(image_bytes)
+    img = Image.open(data_io)
+
+    ahash = str(imagehash.average_hash(img))
+    dhash = str(imagehash.dhash(img))
+    phash = str(imagehash.phash_simple(img))
+
+    doc = {
+        "query": {
+            "bool": {
+                "must": [
+                    {"match": {"ahash": {"query": ahash, "operator": "and"}}},
+                    {"match": {"dhash": {"query": dhash, "operator": "and"}}},
+                    {"match": {"phash": {"query": phash, "operator": "and"}}},
+                ]
+            }
+        },
+        "from": 0,
+        "size": 100,
+        "sort": {"_score": "desc"},
+    }
+
+    res = es.search(index=_index, body=doc)
+    images = clean_data(res["hits"]["hits"])
+    result = {"images": sort_data(images, None), "count": len(images)}
+
+    return JSONResponse(content=result)
+
+
+def get_image_hash_values(image):
+    ahash = str(imagehash.average_hash(image))
+    dhash = str(imagehash.dhash(image))
+    phash = str(imagehash.phash_simple(image))
+
+    return ahash, dhash, phash
+
 @app.post(path="/manage/meme/upload")
 async def upload_meme(request: Request):
     db = db_session()
     body = await request.form()
 
-    # image = body['image']
-    # image_name = image.filename
-
-    print(body['image'][:50])
     image_bytes = base64.b64decode(body['image'])
     image_name = body['imageName']
     name = body['name']
@@ -675,10 +642,7 @@ async def upload_meme(request: Request):
     selected_tag_ids = body['selectedTagIds'].split(",")
     selected_tag_ids = list(filter(lambda x: len(x) > 0, selected_tag_ids))
 
-    print(image_bytes[:50], image_name, name, description, selected_tag_ids)
-
-    # image_bytes = await image.read()
-    # data_io = io.BytesIO(image_bytes)
+    print(image_name, name, description, selected_tag_ids)
 
     data_io = io.BytesIO(image_bytes)
     from PIL import Image
@@ -695,7 +659,8 @@ async def upload_meme(request: Request):
     db.flush()
     db.refresh(meme)
 
-    image = models.IMAGE(image_url=full_url, width=img.width, height=img.height, meme_id=meme.meme_id)
+    ahash, dhash, phash = get_image_hash_values(img)
+    image = models.IMAGE(image_url=full_url, width=img.width, height=img.height, meme_id=meme.meme_id, ahash=ahash, dhash=dhash, phash=phash)
     db.add(image)
     for selected_tag_id in selected_tag_ids:
         selected_tag_id = int(selected_tag_id)
