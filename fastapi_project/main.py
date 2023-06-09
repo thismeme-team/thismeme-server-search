@@ -595,6 +595,8 @@ async def search_same_image(request: Request):
 
     image_bytes = base64.b64decode(body['image'])
     data_io = io.BytesIO(image_bytes)
+
+    from PIL import Image
     img = Image.open(data_io)
 
     ahash = str(imagehash.average_hash(img))
