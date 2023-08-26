@@ -522,7 +522,7 @@ async def log_viewer(request: Request):
 def _get_logs(target):
     logs = []
     dir_path = f"logs/{target}/"
-    for path in sorted(os.listdir(dir_path)):
+    for path in sorted(os.listdir(dir_path), reverse=True):
         log_date = path.split("_")[-1].split(".")[0]
         logs.append(f"log_date:{log_date}")
         try:
