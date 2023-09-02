@@ -25,6 +25,7 @@ import models
 from discord.ext import commands
 from discord.ui import View, Button
 from openai_call import get_openai_categorizing
+from PIL import Image
 
 import discord
 import imagehash
@@ -519,32 +520,34 @@ async def log_viewer(request: Request):
     return templates.TemplateResponse("log_viewer.html", context={"request": request})
 
 
-def _get_logs(target):
+def _get_logs(target, idx):
     logs = []
     dir_path = f"logs/{target}/"
-    for path in sorted(os.listdir(dir_path), reverse=True):
-        log_date = path.split("_")[-1].split(".")[0]
-        logs.append(f"log_date:{log_date}")
-        try:
-            with open(dir_path + path, "rt") as f:
-                lines = f.readlines()
-                for line in lines:
-                    logs.append(line)
-        except:
-            continue
+    paths = sorted(os.listdir(dir_path), reverse=True)
+
+    path = paths[idx]
+    log_date = path.split("_")[-1].split(".")[0]
+    logs.append(f"log_date:{log_date}")
+    try:
+        with open(dir_path + path, "rt") as f:
+            lines = f.readlines()
+            for line in lines:
+                logs.append(line)
+    except:
+        pass
 
     return logs
 
 
-@app.get(path="/log/app")
-async def get_app_logs(request: Request):
-    logs = _get_logs("app")
+@app.get(path="/log/app/{idx}")
+async def get_app_logs(request: Request, idx: int):
+    logs = _get_logs("app", idx)
     return JSONResponse(content={"logs": logs})
 
 
-@app.get(path="/log/bot")
-async def get_bot_logs(request: Request):
-    logs = logs = _get_logs("bot")
+@app.get(path="/log/bot/{idx}")
+async def get_bot_logs(request: Request, idx: int):
+    logs = logs = _get_logs("bot", idx)
     return JSONResponse(content={"logs": logs})
 
 
@@ -886,3 +889,33 @@ async def admin_get_recommend_category(request: Request):
     }
     driver.quit()
     return JSONResponse(content=content)
+
+
+@app.post(path="/image/upload")
+async def upload_meme_image(request: Request):
+    body = await request.form()
+
+    image_bytes = base64.b64decode(body['image'])
+    image_name = body['imageName']
+
+    data_io = io.BytesIO(image_bytes)
+    img = Image.open(data_io)
+    
+    ext = image_name.split(".")[-1]
+    img_name = f"{hashlib.sha256(image_name.encode('utf-8')).hexdigest()}.{ext}"
+    response = s3_main_lib.upload_image(image_bytes, img_name)
+    base_url = "https://jjmeme-bucket-2.s3.amazonaws.com/"
+    full_url = f"{base_url}{response.key}"
+
+    ahash, dhash, phash = get_image_hash_values(img)
+
+    content = {
+        "full_url": full_url,
+        "width": img.width,
+        "height": img.height,
+        "ahash": ahash,
+        "dhash": dhash,
+        "phash": phash
+    }
+    return JSONResponse(content=content)
+    

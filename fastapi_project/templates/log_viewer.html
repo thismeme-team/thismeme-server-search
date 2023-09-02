@@ -79,13 +79,17 @@
     </div>
 
     <script>
+        let appIdx = 0;
+        let botIdx = 0;
+
         const loadLogs = (target) => {
-            fetch(`/log/${target}`)
+            const idx = target === "app" ? appIdx : botIdx;
+            fetch(`/log/${target}/${idx}`)
                 .then(response => response.json())
                 .then(data => {
                     const logs = data.logs;
                     const targetElement = document.getElementById(`${target}-log-list`);
-                    targetElement.innerHTML = "";
+                    // targetElement.innerHTML = "";
                     for(let log of logs){
                         if(log.indexOf("log_date:") >= 0){
                             log = log.replace("log_date:", "");
@@ -95,6 +99,8 @@
                             targetElement.innerHTML += log + "<br/>";
                         }
                     }
+                    appIdx += 1;
+                    botIdx += 1;
                 });
         }
 
